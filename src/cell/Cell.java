@@ -6,6 +6,8 @@ import vehicle.Vehicle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -13,42 +15,68 @@ import java.util.stream.Collectors;
  */
 public class Cell {
     protected int time;
+    protected int maxFlow;
     protected final int id;
     protected final int link;
     protected final int volume;
-    protected final int maxFlow;
     protected final double delta;
     protected final List<Vehicle> vehicles;
     protected final static VehicleComparator comparator = new VehicleComparator();
     protected final static StringBuffer buffer = new StringBuffer("time,link,index,location,dwell\n");
+    private FlowSequence flowSequence;
 
-    public Cell(int id, int link, int volume, int maxFlow, double delta) {
+    private class FlowSequence {
+        private int index;
+        private final int size;
+        private final List<Map.Entry<Integer, Integer>> flows;
+
+        public FlowSequence(Map<Integer, Integer> flows) {
+            index = 0;
+            TreeMap<Integer, Integer> copy = new TreeMap<>(flows);
+            maxFlow = copy.firstEntry().getValue();
+            this.flows = copy.entrySet().stream().collect(Collectors.toList());
+            size = this.flows.size();
+        }
+
+        private boolean updateOrNot() {
+            return index + 1 < size && time > flows.get(index + 1).getKey();
+        }
+
+        public void update() {
+            if (updateOrNot()) {
+                index++;
+                maxFlow = flows.get(index).getValue();
+            }
+        }
+    }
+
+    public Cell(int id, int link, int volume, double delta, Map<Integer, Integer> flows) {
         time = 0;
         this.id = id;
         this.link = link;
         this.volume = volume;
-        this.maxFlow = maxFlow;
         this.delta = delta;
         vehicles = new ArrayList<>();
+        flowSequence = new FlowSequence(flows);
     }
 
-    public int id() {
+    public int getId() {
         return id;
     }
 
-    public int link() {
+    public int getLink() {
         return link;
     }
 
-    public int volume() {
+    public int getVolume() {
         return volume;
     }
 
-    public int maxFlow() {
+    public int getMaxFlow() {
         return maxFlow;
     }
 
-    public double delta() {
+    public double getDelta() {
         return delta;
     }
 
@@ -114,7 +142,8 @@ public class Cell {
     }
 
     public void iterate() {
-        throw new UnsupportedOperationException("unsupported operation");
+        time++;
+        flowSequence.update();
     }
 
     public static String getRecord() {

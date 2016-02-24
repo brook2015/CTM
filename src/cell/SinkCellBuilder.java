@@ -1,14 +1,13 @@
 package cell;
 
-import graph.Graph;
+import java.util.TreeMap;
 
 public class SinkCellBuilder {
     private int id;
     private int link;
     private int volume;
-    private int maxFlow;
     private double delta;
-    private Graph graph;
+    private TreeMap<Integer, Integer> flows;
 
     public SinkCellBuilder setId(int id) {
         this.id = id;
@@ -25,8 +24,14 @@ public class SinkCellBuilder {
         return this;
     }
 
-    public SinkCellBuilder setMaxFlow(int maxFlow) {
-        this.maxFlow = maxFlow;
+    public SinkCellBuilder setFlows(TreeMap<Integer, Integer> flows) {
+        if (flows == null) {
+            throw new NullPointerException("null flows");
+        }
+        if (0 != flows.firstKey()) {
+            throw new IllegalArgumentException("initial flow must equal to zero.");
+        }
+        this.flows = flows;
         return this;
     }
 
@@ -36,6 +41,6 @@ public class SinkCellBuilder {
     }
 
     public SinkCell createSinkCell() {
-        return new SinkCell(id, link, volume, maxFlow, delta);
+        return new SinkCell(id, link, volume, delta, flows);
     }
 }

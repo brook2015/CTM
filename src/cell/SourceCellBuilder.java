@@ -1,13 +1,13 @@
 package cell;
 
-import graph.Graph;
+import java.util.TreeMap;
 
 public class SourceCellBuilder {
     private int id;
     private int link;
     private int volume;
-    private int maxFlow;
     private double delta;
+    private TreeMap<Integer, Integer> flows;
 
     public SourceCellBuilder setId(int id) {
         this.id = id;
@@ -24,8 +24,14 @@ public class SourceCellBuilder {
         return this;
     }
 
-    public SourceCellBuilder setMaxFlow(int maxFlow) {
-        this.maxFlow = maxFlow;
+    public SourceCellBuilder setFlows(TreeMap<Integer, Integer> flows) {
+        if (flows == null) {
+            throw new NullPointerException("null flows");
+        }
+        if (0 != flows.firstKey()) {
+            throw new IllegalArgumentException("initial flow must equal to zero.");
+        }
+        this.flows = flows;
         return this;
     }
 
@@ -35,6 +41,6 @@ public class SourceCellBuilder {
     }
 
     public SourceCell createSourceCell() {
-        return new SourceCell(id, link, volume, maxFlow, delta);
+        return new SourceCell(id, link, volume, delta, flows);
     }
 }

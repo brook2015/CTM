@@ -61,6 +61,6 @@ public class Link implements Connector {
 
     @Override
     public String toString() {
-        return head.id() + " --> " + tail.id();
+        return head.getId() + " --> " + tail.getId();
     }
 }

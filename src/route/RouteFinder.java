@@ -39,12 +39,12 @@ public class RouteFinder {
         }
         List<Integer> sequence = new ArrayList<>();
         Cell current = origin;
-        sequence.add(current.id());
+        sequence.add(current.getId());
         do {
             List<Link> linked = graph.get(current);
             int index = randomIndex.nextInt(linked.size());
             current = linked.get(index).getTail();
-            sequence.add(current.id());
+            sequence.add(current.getId());
         } while (graph.containsKey(current));
         return new Route(sequence);
     }

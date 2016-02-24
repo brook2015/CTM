@@ -4,14 +4,16 @@ import connector.Connector;
 import graph.Graph;
 import vehicle.Vehicle;
 
+import java.util.Map;
+
 /**
  * Created by yaokaibin on 16-2-11.
  */
 public class SinkCell extends Cell {
     private Connector in;
 
-    public SinkCell(int id, int link, int volume, int maxFlow, double delta) {
-        super(id, link, volume, maxFlow, delta);
+    public SinkCell(int id, int link, int volume, double delta, Map<Integer, Integer> flows) {
+        super(id, link, volume, delta, flows);
     }
 
     @Override
@@ -29,7 +31,7 @@ public class SinkCell extends Cell {
 
     @Override
     public void iterate() {
-        time++;
+        super.iterate();
         stuckVehicles();
         in.addToTail();
         for (Vehicle vehicle : vehicles) {

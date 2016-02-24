@@ -9,103 +9,103 @@ import connector.DivergeLinks;
 import connector.Link;
 import connector.MergeLinks;
 import route.RouteFinder;
+import rw.FileOperation;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
  * Created by yaokaibin on 16-2-11.
  */
 public class RoadNet implements Graph {
-    private final List<Link> links;
-    private final List<Cell> cells;
+    private final List<Link> links = new ArrayList<>();
+    private final List<Cell> cells = new ArrayList<>();
 
     public RoadNet(String linkPath, String cellPath) {
-        links = new ArrayList<>();
-        cells = new ArrayList<>();
         loadCells(cellPath);
         loadLinks(linkPath);
         initiateCells();
     }
 
-    @SuppressWarnings("resource")
     private void loadCells(String path) {
-        Scanner scanner = null;
-        try {
-            File file = new File(path);
-            scanner = new Scanner(file).useDelimiter("\\n|,");
-            int count = scanner.nextInt();
-            for (int i = 0; i < count; i++) {
-                int id = scanner.nextInt();
-                int type = scanner.nextInt();
-                int link = scanner.nextInt();
-                int volume = scanner.nextInt();
-                int maxFlow = scanner.nextInt();
-                double delta = scanner.nextDouble();
-                Cell cell;
-                if (type == 1) {
-                    cell = new SourceCellBuilder().setId(id).setLink(link)
-                            .setVolume(volume).setMaxFlow(maxFlow)
-                            .setDelta(delta)
-                            .createSourceCell();
-                } else if (type == 2) {
-                    cell = new OrdinaryCellBuilder().setId(id).setLink(link)
-                            .setVolume(volume).setMaxFlow(maxFlow)
-                            .setDelta(delta)
-                            .createOrdinaryCell();
-                } else if (type == 3) {
-                    cell = new SinkCellBuilder().setId(id).setLink(link)
-                            .setVolume(volume).setMaxFlow(maxFlow)
-                            .setDelta(delta)
-                            .createSinkCell();
-                } else {
-                    throw new IllegalStateException("invalid cell type");
-                }
-                cells.add(cell);
-            }
-        } catch (FileNotFoundException | IllegalStateException e) {
-            e.printStackTrace();
-        } finally {
-            if (scanner != null) {
-                scanner.close();
-            }
+        List<String> source = FileOperation.readFileToList(new File(path));
+        assert source != null;
+        cells.addAll(source.stream().map(this::parseStringToCell).collect(Collectors.toList()));
+    }
+
+    private Cell parseStringToCell(String source) {
+        String[] splitStrings = source.split(" ");
+        if (splitStrings.length != 7 && splitStrings.length != 6) {
+            throw new IllegalArgumentException("invalid arguments: " + source);
+        }
+        int id = Integer.parseInt(splitStrings[0]);
+        int type = Integer.parseInt(splitStrings[1]);
+        int link = Integer.parseInt(splitStrings[2]);
+        int volume = Integer.parseInt(splitStrings[3]);
+        double delta = Double.parseDouble(splitStrings[4]);
+        TreeMap<Integer, Integer> flows = stringToTreeMap(splitStrings[splitStrings.length - 1]);
+        if (type == 1) {
+            return new SourceCellBuilder()
+                    .setId(id)
+                    .setLink(link)
+                    .setVolume(volume)
+                    .setFlows(flows)
+                    .setDelta(delta)
+                    .createSourceCell();
+        } else if (type == 2) {
+            int initialVehicleCount = Integer.parseInt(splitStrings[5]);
+            return new OrdinaryCellBuilder()
+                    .setId(id)
+                    .setLink(link)
+                    .setVolume(volume)
+                    .setFlows(flows)
+                    .setDelta(delta)
+                    .setInitialVehicleCount(initialVehicleCount)
+                    .createOrdinaryCell();
+        } else if (type == 3) {
+            return new SinkCellBuilder()
+                    .setId(id)
+                    .setLink(link)
+                    .setVolume(volume)
+                    .setFlows(flows)
+                    .setDelta(delta)
+                    .createSinkCell();
+        } else {
+            throw new IllegalStateException("illegal state");
         }
     }
 
-    @SuppressWarnings("resource")
+    private TreeMap<Integer, Integer> stringToTreeMap(String source) {
+        String[] splitStrings = source.split("\\:|\\/");
+        int size = splitStrings.length / 2;
+        TreeMap<Integer, Integer> result = new TreeMap<>();
+        for (int i = 0; i < size; i++) {
+            int time = Integer.parseInt(splitStrings[2 * i]);
+            int flow = Integer.parseInt(splitStrings[2 * i + 1]);
+            result.put(time, flow);
+        }
+        return result;
+    }
+
     private void loadLinks(String path) {
-        Scanner scanner = null;
-        try {
-            File file = new File(path);
-            scanner = new Scanner(file).useDelimiter("\\n|,");
-            int count = scanner.nextInt();
-            for (int i = 0; i < count; i++) {
-                int headId = scanner.nextInt();
-                int tailId = scanner.nextInt();
-                Cell head = getCellByIndex(headId);
-                Cell tail = getCellByIndex(tailId);
-                if (head == null || tail == null) {
-                    throw new NullPointerException("null head or tail");
-                }
-                Link link = new Link(head, tail);
-                links.add(link);
-            }
-        } catch (FileNotFoundException | NullPointerException e) {
-            e.printStackTrace();
-        } finally {
-            if (scanner != null) {
-                scanner.close();
-            }
+        List<String> source = FileOperation.readFileToList(new File(path));
+        assert source != null;
+        for (String s : source) {
+            String[] splitStrings = s.split(" ");
+            int headCellId = Integer.parseInt(splitStrings[0]);
+            int tailCellId = Integer.parseInt(splitStrings[1]);
+            Cell head = getCellByIndex(headCellId);
+            Cell tail = getCellByIndex(tailCellId);
+            links.add(new Link(head, tail));
         }
     }
 
     private Cell getCellByIndex(int id) {
         for (Cell cell : cells) {
-            if (id == cell.id()) {
+            if (id == cell.getId()) {
                 return cell;
             }
         }
@@ -159,7 +159,7 @@ public class RoadNet implements Graph {
         if (links == null) {
             throw new NullPointerException("null links");
         } else if (links.isEmpty()) {
-            throw new IllegalArgumentException("invalid links");
+            throw new IllegalArgumentException("empty links");
         } else if (1 == links.size()) {
             return links.get(0);
         } else {
@@ -171,7 +171,7 @@ public class RoadNet implements Graph {
         if (links == null) {
             throw new NullPointerException("null links");
         } else if (links.isEmpty()) {
-            throw new IllegalArgumentException("invalid links");
+            throw new IllegalArgumentException("empty links");
         } else if (1 == links.size()) {
             return links.get(0);
         } else {

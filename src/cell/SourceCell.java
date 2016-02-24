@@ -4,6 +4,8 @@ import connector.Connector;
 import graph.Graph;
 import vehicle.VehicleFactory;
 
+import java.util.Map;
+
 /**
  * Created by yaokaibin on 16-2-11.
  */
@@ -11,8 +13,8 @@ public class SourceCell extends Cell {
     private Connector out;
     private static VehicleFactory factory;
 
-    public SourceCell(int id, int link, int volume, int maxFlow, double delta) {
-        super(id, link, volume, maxFlow, delta);
+    public SourceCell(int id, int link, int volume, double delta, Map<Integer,Integer> flows) {
+        super(id, link, volume, delta, flows);
     }
 
     @Override
@@ -20,29 +22,22 @@ public class SourceCell extends Cell {
         if (graph == null) {
             throw new NullPointerException("null graph");
         }
-        out = graph.getOutConnector(this);
         if (factory == null) {
             factory = new VehicleFactory(graph.getRouteFinder());
         }
+        out = graph.getOutConnector(this);
     }
 
     @Override
     public void storage() {
-        addVehicles2Cell();
+        addVehicles(factory.produce(this, addition()));
         out.storage();
     }
 
     @Override
     public void iterate() {
-        time++;
+        super.iterate();
         out.removeFromHead();
-    }
-
-    private void addVehicles2Cell() {
-        if (factory == null) {
-            throw new NullPointerException("null factory");
-        }
-        addVehicles(factory.produce(this, addition()));
     }
 
     private int addition() {

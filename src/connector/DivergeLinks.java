@@ -31,7 +31,7 @@ public class DivergeLinks implements Connector {
     public void storage() {
         for (Link link : links) {
             int receive = link.getTail().getMaxReceive();
-            int id = link.getTail().id();
+            int id = link.getTail().getId();
             link.setVehicles(head.getVehicles(receive, id));
         }
     }
